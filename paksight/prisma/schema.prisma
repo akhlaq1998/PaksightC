@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Default to SQLite for dev fallback. For Postgres, set DATABASE_URL accordingly
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Core models
+
+model Profile {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  name       String?
+  org        String?
+  role       Role     @default(VIEWER)
+  status     String   @default("invited") // invited|active|suspended
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Dev auth link (used only in fallback auth)
+  localUser  LocalUser?
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model AccessRequest {
+  id         String   @id @default(uuid())
+  name       String
+  org        String?
+  role       String?
+  email      String
+  reason     String?
+  status     String   @default("new") // new|reviewed|approved|rejected
+  createdAt  DateTime @default(now())
+  reviewedBy String?
+  notes      String?
+}
+
+model IngestKey {
+  id        String   @id @default(uuid())
+  name      String
+  keyHash   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Country {
+  iso    String  @id  // "PK","GB","US","IN","AF","HU"
+  name   String
+  lat    Float
+  lon    Float
+  region String?
+
+  outlets Outlet[]
+}
+
+model Outlet {
+  id          Int      @id @default(autoincrement())
+  name        String
+  countryIso  String
+  domain      String   @unique
+  rssUrl      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  Country     Country  @relation(fields: [countryIso], references: [iso])
+
+  articles    Article[]
+}
+
+model Article {
+  id             Int      @id @default(autoincrement())
+  externalId     String?
+  outletId       Int?
+  url            String
+  canonicalUrl   String?
+  title          String
+  summary        String?
+  content        String?
+  publishedAt    DateTime?
+  fetchedAt      DateTime @default(now())
+  language       String?
+  countryIso     String?   // outlet country
+  paywalled      Boolean   @default(false)
+  hash           String?
+  sentimentLabel String?
+  sentimentScore Float?
+  topics         Json?
+  entities       Json?
+  Outlet         Outlet?   @relation(fields: [outletId], references: [id])
+
+  @@index([publishedAt])
+  @@index([countryIso])
+  @@index([outletId])
+}
+
+model MetricsCountryDaily {
+  id         Int      @id @default(autoincrement())
+  date       DateTime
+  countryIso String
+  count      Int
+  pos        Int
+  neg        Int
+  neu        Int
+
+  @@index([date, countryIso])
+}
+
+model MetricsTrending {
+  id            Int      @id @default(autoincrement())
+  windowStart   DateTime
+  windowEnd     DateTime
+  countryIso    String   // or "GLOBAL"
+  topicOrEntity String
+  score         Float
+  sampleCount   Int
+
+  @@index([windowEnd, countryIso])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    String?
+  action    String
+  target    String?
+  meta      Json?
+  createdAt DateTime @default(now())
+}
+
+// Fallback local auth (dev only). Not used when Supabase is configured
+model LocalUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  profileId    String   @unique
+  profile      Profile  @relation(fields: [profileId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+// Email logging when SMTP not configured
+model EmailLog {
+  id        Int      @id @default(autoincrement())
+  to        String
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// Health beats from ingest services
+model Healthbeat {
+  id        Int      @id @default(autoincrement())
+  service   String
+  status    String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+// Password reset tokens (dev auth flow)
+model ResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
