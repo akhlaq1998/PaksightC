@@ -2,7 +2,14 @@ import { HeatmapGrid } from "@/components/HeatmapGrid";
 import { TrendingList } from "@/components/TrendingList";
 import { SentimentChart } from "@/components/SentimentChart";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { getSessionUser } from "@/lib/auth";
+import { cookies } from "next/headers";
+
+async function getSessionUser() {
+  const c = await cookies();
+  const raw = c.get("paksight_session")?.value;
+  if (!raw) return null;
+  try { return JSON.parse(raw) as { role: "ADMIN" | "MEMBER" | "VIEWER" }; } catch { return null; }
+}
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
 function daysAgoStr(n: number) { const d = new Date(Date.now() - n*24*3600*1000); return d.toISOString().slice(0,10); }
