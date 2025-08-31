@@ -1,6 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
+  "includeFiles": ["paksight/**"],
   "installCommand": "cd paksight && npm ci",
   "buildCommand": "cd paksight && npm run build",
   "outputDirectory": "paksight/.next"
