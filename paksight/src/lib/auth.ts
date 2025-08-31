@@ -1,13 +1,14 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import type { Role } from "@prisma/client";
 
 const SESSION_COOKIE = "paksight_session";
 
 export type SessionUser = {
   id: string;
   email: string;
-  role: "ADMIN" | "MEMBER" | "VIEWER";
+  role: Extract<Role, "ADMIN" | "MEMBER" | "VIEWER">;
 };
 
 export async function signInWithPassword(email: string, password: string) {
@@ -17,7 +18,7 @@ export async function signInWithPassword(email: string, password: string) {
   if (!ok) return null;
   const profile = await prisma.profile.findUnique({ where: { id: user.profileId } });
   if (!profile) return null;
-  const session: SessionUser = { id: profile.id, email: profile.email, role: profile.role as any };
+  const session: SessionUser = { id: profile.id, email: profile.email, role: profile.role as SessionUser["role"] };
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, JSON.stringify(session), { httpOnly: true, sameSite: "lax", path: "/" });
   return session;

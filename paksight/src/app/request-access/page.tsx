@@ -16,7 +16,7 @@ export default function RequestAccessPage() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data?.error || "Failed to submit");
+      setError((data as { error?: string }).error || "Failed to submit");
       return;
     }
     setSubmitted(true);
@@ -26,7 +26,7 @@ export default function RequestAccessPage() {
     return (
       <div className="mx-auto max-w-md px-4 sm:px-6 lg:px-8 py-10">
         <h1 className="text-2xl font-bold" style={{ fontFamily: "Roboto Slab, serif" }}>Request received</h1>
-        <p className="mt-2 text-sm text-[#1C1C1E]/75">We'll email you after review.</p>
+        <p className="mt-2 text-sm text-[#1C1C1E]/75">We&apos;ll email you after review.</p>
       </div>
     );
   }
