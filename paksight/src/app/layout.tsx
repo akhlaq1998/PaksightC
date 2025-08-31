@@ -28,8 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${robotoSlab.variable} antialiased bg-white text-[#1C1C1E]`}>
+        <a href="#main" className="skip-link">Skip to main content</a>
         <Navbar />
-        <main>{children}</main>
+        <main id="main">{children}</main>
       </body>
     </html>
   );
