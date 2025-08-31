@@ -1,8 +1,16 @@
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDocs() {
-  const emailLogs = await prisma.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
+  let emailLogs: Array<{ id: number; to: string; subject: string; createdAt: Date }> = [];
+  try {
+    emailLogs = await prisma.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
+  } catch {
+    emailLogs = [];
+  }
+
   const openapi = {
     openapi: "3.0.0",
     info: { title: "PakSight API", version: "1.0.0" },
@@ -56,16 +64,20 @@ curl -X POST "$APP_BASE_URL/api/analytics/recompute/trending?hours=72"
       {! (env.smtp.host || env.resendApiKey || env.sendgridApiKey) && (
         <div className="mt-3">
           <h2 className="font-semibold">Email Log (latest 50)</h2>
-          <div className="mt-2 divide-y rounded-md border bg-white">
-            {emailLogs.map((e) => (
-              <div key={e.id} className="p-3">
-                <div className="text-xs text-[#1C1C1E]/60">{new Date(e.createdAt).toLocaleString()}</div>
-                <div className="font-medium">To: {e.to}</div>
-                <div className="text-sm">{e.subject}</div>
-              </div>
-            ))}
-            {emailLogs.length === 0 && <div className="p-3 text-sm text-[#1C1C1E]/70">No email logs.</div>}
-          </div>
+          {emailLogs.length === 0 && (
+            <div className="text-sm text-[#1C1C1E]/70">No logs or database not reachable at build time.</div>
+          )}
+          {emailLogs.length > 0 && (
+            <div className="mt-2 divide-y rounded-md border bg-white">
+              {emailLogs.map((e) => (
+                <div key={e.id} className="p-3">
+                  <div className="text-xs text-[#1C1C1E]/60">{new Date(e.createdAt).toLocaleString()}</div>
+                  <div className="font-medium">To: {e.to}</div>
+                  <div className="text-sm">{e.subject}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
