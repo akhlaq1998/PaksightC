@@ -9,8 +9,8 @@ generator client {
 }
 
 datasource db {
-  // Default to SQLite for dev fallback. For Postgres, set DATABASE_URL accordingly
-  provider = "sqlite"
+  // Supabase/Postgres in production. Ensure DATABASE_URL points to Postgres when deploying
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
