@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { mapRegionToCountries } from "@/lib/regions";
+import { rateLimit } from "@/lib/rateLimit";
 
 type WindowRange = { from: string; to: string };
 function isWindowRange(x: unknown): x is WindowRange {
@@ -34,6 +35,8 @@ function isPakistanQuery(question: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || "local";
+  if (!rateLimit(`chat:${ip}`, 10, 60_000)) return NextResponse.json({ error: "Rate limit" }, { status: 429 });
   const c = await cookies();
   const raw = c.get("paksight_session")?.value;
   let role: "ADMIN" | "MEMBER" | "VIEWER" = "VIEWER";

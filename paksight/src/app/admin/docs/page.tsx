@@ -1,6 +1,8 @@
 import { env } from "@/lib/env";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminDocs() {
+  const emailLogs = await prisma.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
   const openapi = {
     openapi: "3.0.0",
     info: { title: "PakSight API", version: "1.0.0" },
@@ -50,7 +52,22 @@ curl -X POST "$APP_BASE_URL/api/analytics/recompute/trending?hours=72"
       <pre className="mt-2 p-3 rounded-md border bg-white overflow-auto text-xs">{openapiJson}</pre>
       <h2 className="mt-6 font-semibold">cURL examples</h2>
       <pre className="mt-2 p-3 rounded-md border bg-white overflow-auto text-xs">{curls}</pre>
-      <div className="mt-6 text-sm text-[#1C1C1E]/70">Email provider: {env.smtp.host || env.resendApiKey || env.sendgridApiKey ? 'configured' : 'not configured; emails are logged to Email Log'}</div>
+      <div className="mt-6 text-sm text-[#1C1C1E]/70">Email provider: {env.smtp.host || env.resendApiKey || env.sendgridApiKey ? 'configured' : 'not configured; emails are logged below'}</div>
+      {! (env.smtp.host || env.resendApiKey || env.sendgridApiKey) && (
+        <div className="mt-3">
+          <h2 className="font-semibold">Email Log (latest 50)</h2>
+          <div className="mt-2 divide-y rounded-md border bg-white">
+            {emailLogs.map((e) => (
+              <div key={e.id} className="p-3">
+                <div className="text-xs text-[#1C1C1E]/60">{new Date(e.createdAt).toLocaleString()}</div>
+                <div className="font-medium">To: {e.to}</div>
+                <div className="text-sm">{e.subject}</div>
+              </div>
+            ))}
+            {emailLogs.length === 0 && <div className="p-3 text-sm text-[#1C1C1E]/70">No email logs.</div>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyIngestKey } from "@/lib/ingest";
 import type { Prisma } from "@prisma/client";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || "local";
+  if (!rateLimit(`ingest:${ip}`, 60, 60_000)) return NextResponse.json({ error: "Rate limit" }, { status: 429 });
   const ok = await verifyIngestKey(req.headers.get("X-INGEST-KEY"));
   if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
